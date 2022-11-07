@@ -6,7 +6,6 @@ import com.example.RestApi.service.PersonService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.hamcrest.Matchers.hasItem
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.function.Executable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -72,9 +71,10 @@ class RestApiApplicationTests {
     @Order(4)
     fun `4 - Update Person`() {
         val update: PersonDto = personUpdated
+        jsonPersonUpdated = objectMapper.writeValueAsString(personUpdated)
         update.id = id
         mockMvc.perform(
-            put("$baseUri/$id").content(objectMapper.writeValueAsString(personUpdated))
+            put("$baseUri/$id").content(jsonPersonUpdated)
                 .contentType(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isAccepted)
@@ -86,7 +86,6 @@ class RestApiApplicationTests {
     @Test
     @Order(5)
     fun `5 - Get persons by name`() {
-        jsonPersonUpdated = objectMapper.writeValueAsString(personUpdated)
         val path = objectMapper.readTree(jsonPersonUpdated).get("name").asText()
 
         mockMvc.perform(get("$baseUri/name/$path").contentType(MediaType.APPLICATION_JSON))
@@ -111,11 +110,10 @@ class RestApiApplicationTests {
             .andExpect(status().isAccepted)
 
         val thrown: PersonNotFoundException = Assertions.assertThrows(
-            PersonNotFoundException::class.java,
-            Executable {
-                personService.getById(id)
-            }
-        )
+            PersonNotFoundException::class.java
+        ) {
+            personService.getById(id)
+        }
 
         Assertions.assertEquals("Person with id = $id not found", thrown.message)
     }
